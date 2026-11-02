@@ -2,7 +2,7 @@
 
 **Curso:** Percepción Computacional — Sesión 09 / 10  
 **Caso de Estudio:** *El Misterio del Sismógrafo Corrupto*  
-**Repositorio Remoto:** https://github.com/FSFR192/S10_PERECEPCI-N.git
+**Repositorio Remoto:** https://github.com/FSFR192/S9_PERECEPCION.git
 
 ---
 
@@ -54,3 +54,4 @@ python "caso_sismografo_s09_(1).py"
 ```bash
 python interfaz_sismografo_gui.py
 ```
+
