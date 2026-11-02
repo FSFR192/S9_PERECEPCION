@@ -1,0 +1,2023 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitoreo Sismográfico Volcánico - Señales Superpuestas y Depuración</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
+      background-color: #f1f5f9;
+      color: #0f172a;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ================= SIDEBAR ================= */
+    .sidebar {
+      width: 220px;
+      min-width: 220px;
+      background-color: #0d1727;
+      color: #94a3b8;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 14px 12px;
+      user-select: none;
+      z-index: 10;
+    }
+
+    .sidebar-top {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .volcano-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 0 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      cursor: pointer;
+    }
+
+    .volcano-logo svg {
+      width: 48px;
+      height: 48px;
+      transition: transform 0.2s;
+    }
+
+    .volcano-logo:hover svg {
+      transform: scale(1.06);
+    }
+
+    .nav-menu {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #94a3b8;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .nav-item svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+      flex-shrink: 0;
+    }
+
+    .nav-item:hover {
+      background-color: rgba(255, 255, 255, 0.06);
+      color: #f8fafc;
+    }
+
+    .nav-item.active {
+      background-color: #1976d2;
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    .badge-alert {
+      margin-left: auto;
+      background-color: #ef4444;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 700;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .station-info {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .station-info-title {
+      font-size: 10px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: #64748b;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .station-row {
+      display: flex;
+      justify-content: space-between;
+      color: #cbd5e1;
+      margin-bottom: 2px;
+    }
+
+    .station-row span:first-child {
+      color: #64748b;
+    }
+
+    .dot-green {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background-color: #22c55e;
+      border-radius: 50%;
+      margin-right: 4px;
+      box-shadow: 0 0 8px rgba(34, 197, 94, 0.7);
+    }
+
+    /* ================= MAIN CONTENT ================= */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 10px 16px;
+      gap: 8px;
+      position: relative;
+    }
+
+    /* TOP HEADER */
+    .top-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #ffffff;
+      border-radius: 9px;
+      padding: 7px 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      border: 1px solid #e2e8f0;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .header-titles h1 {
+      font-size: 18px;
+      font-weight: 800;
+      color: #0b1f3a;
+      letter-spacing: -0.3px;
+    }
+
+    .header-titles p {
+      font-size: 11.5px;
+      color: #475569;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .alert-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 5px 12px;
+      color: #991b1b;
+      transition: all 0.3s;
+    }
+
+    .alert-pill.normal {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+      color: #166534;
+    }
+
+    .alert-pill-icon {
+      width: 20px;
+      height: 20px;
+      color: #dc2626;
+      flex-shrink: 0;
+    }
+
+    .alert-pill.normal .alert-pill-icon {
+      color: #16a34a;
+    }
+
+    .alert-pill-text strong {
+      font-size: 11px;
+      font-weight: 800;
+      color: #b91c1c;
+    }
+
+    .alert-pill.normal strong {
+      color: #15803d;
+    }
+
+    .alert-pill-text span {
+      font-size: 10px;
+      color: #7f1d1d;
+    }
+
+    .alert-pill.normal span {
+      color: #166534;
+    }
+
+    .volcano-thumbnail {
+      width: 70px;
+      height: 38px;
+      border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+      border: 1px solid #cbd5e1;
+    }
+
+    .clock-system {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 1px;
+      font-size: 11px;
+      color: #334155;
+    }
+
+    .clock-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .system-status {
+      display: flex;
+      align-items: center;
+      font-size: 10px;
+      color: #059669;
+      font-weight: 600;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .btn-action {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      color: #1e293b;
+      padding: 5px 9px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+
+    .btn-action:hover {
+      background: #e2e8f0;
+    }
+
+    .btn-action.active-play {
+      background: #ef4444;
+      border-color: #dc2626;
+      color: #ffffff;
+    }
+
+    .btn-primary {
+      background: #1976d2;
+      border-color: #1565c0;
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: #1565c0;
+    }
+
+    /* PROFESSOR NOTICE CALLOUT BANNER */
+    .professor-guide-banner {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #1e40af;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    }
+
+    .professor-guide-banner strong {
+      font-weight: 700;
+      color: #1d4ed8;
+    }
+
+    .banner-tags {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+    }
+
+    .tag-amp {
+      background: #dbeafe;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+    }
+
+    /* VIEW MODE TOGGLE (4 GRAPHS vs 2 LARGE GRAPHS) */
+    .view-toggle-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 11px;
+    }
+
+    .view-mode-tabs {
+      display: flex;
+      gap: 4px;
+      background: #f1f5f9;
+      padding: 2px;
+      border-radius: 6px;
+    }
+
+    .v-tab {
+      padding: 3px 8px;
+      font-size: 10px;
+      font-weight: 600;
+      color: #475569;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .v-tab.active {
+      background: #ffffff;
+      color: #0b1f3a;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    }
+
+    /* CONTROLS PANEL */
+    .controls-panel {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 8px 12px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .controls-panel.show {
+      display: flex;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 8px;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .control-group label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #334155;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .control-group input[type="range"] {
+      width: 100%;
+      height: 4px;
+      accent-color: #1976d2;
+      cursor: pointer;
+    }
+
+    .val-badge {
+      color: #1976d2;
+      font-weight: 700;
+    }
+
+    /* KPI METRICS ROW */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 8px;
+    }
+
+    .kpi-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 7px 9px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 74px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    }
+
+    .kpi-card-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 5px;
+    }
+
+    .kpi-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    .kpi-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: #0b1f3a;
+      line-height: 1.2;
+    }
+
+    .freq-list {
+      font-size: 9px;
+      line-height: 1.35;
+      color: #334155;
+      margin-top: 1px;
+    }
+
+    .kpi-value {
+      font-size: 17px;
+      font-weight: 800;
+      margin-top: 1px;
+      line-height: 1;
+    }
+
+    .kpi-subtitle {
+      font-size: 8.5px;
+      color: #64748b;
+      margin-top: 2px;
+      font-weight: 500;
+    }
+
+    /* ================= GRAPHS CONTAINER ================= */
+    .graphs-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 8px;
+      flex: 1;
+      min-height: 380px;
+    }
+
+    /* Alternative 2-Graph Mode (Enfoque Profesor) */
+    .graphs-grid.mode-two-graphs {
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr 1fr;
+    }
+
+    .graphs-grid.mode-two-graphs .card-fft,
+    .graphs-grid.mode-two-graphs .card-comparacion {
+      display: none;
+    }
+
+    .graph-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 7px 11px 8px 11px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+      position: relative;
+    }
+
+    .graph-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2px;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .graph-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #0b1f3a;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .graph-title svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    /* EXACT PROFESSOR LEGEND BAR FOR GRAPH 1 */
+    .prof-legend-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 3px 8px;
+      margin-bottom: 3px;
+    }
+
+    .leg-chip {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 9.5px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 1px 4px;
+      border-radius: 3px;
+      transition: opacity 0.15s;
+    }
+
+    .leg-chip.dimmed {
+      opacity: 0.35;
+    }
+
+    .leg-line {
+      width: 14px;
+      height: 3px;
+      border-radius: 2px;
+    }
+
+    .graph-canvas-container {
+      flex: 1;
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 130px;
+      cursor: crosshair;
+    }
+
+    .graph-canvas-container canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Legend Plot 3 / 4 */
+    .graph-legend {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 9.5px;
+      color: #475569;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .legend-bar {
+      width: 12px;
+      height: 2.5px;
+      border-radius: 1px;
+    }
+
+    /* ================= BOTTOM ROW ================= */
+    .bottom-row {
+      display: grid;
+      grid-template-columns: 1.15fr 1.45fr;
+      gap: 8px;
+      min-height: 70px;
+    }
+
+    .bottom-alert {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 7px 11px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.3s;
+    }
+
+    .bottom-alert.normal {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+    }
+
+    .bottom-alert-icon {
+      width: 30px;
+      height: 30px;
+      background: #dc2626;
+      color: #ffffff;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .bottom-alert.normal .bottom-alert-icon {
+      background: #16a34a;
+    }
+
+    .bottom-alert-icon svg {
+      width: 17px;
+      height: 17px;
+      fill: currentColor;
+    }
+
+    .bottom-alert-title {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #b91c1c;
+    }
+
+    .bottom-alert.normal .bottom-alert-title {
+      color: #15803d;
+    }
+
+    .bottom-alert-desc {
+      font-size: 10px;
+      color: #7f1d1d;
+      line-height: 1.3;
+    }
+
+    .bottom-alert.normal .bottom-alert-desc {
+      color: #166534;
+    }
+
+    .workflow-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 7px 11px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .workflow-title {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #0b1f3a;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 2px;
+    }
+
+    .workflow-title svg {
+      width: 12px;
+      height: 12px;
+      color: #475569;
+    }
+
+    .stepper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      padding: 0 4px;
+    }
+
+    .stepper::before {
+      content: "";
+      position: absolute;
+      top: 9px;
+      left: 14px;
+      right: 14px;
+      height: 2px;
+      background: #cbd5e1;
+      z-index: 1;
+    }
+
+    .step-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      max-width: 65px;
+      cursor: pointer;
+    }
+
+    .step-circle {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #2563eb;
+      color: #ffffff;
+      font-size: 9.5px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 0 3px #ffffff;
+      margin-bottom: 2px;
+    }
+
+    .step-node:last-child .step-circle {
+      background: #ea580c;
+    }
+
+    .step-label {
+      font-size: 8px;
+      color: #475569;
+      font-weight: 600;
+      line-height: 1.15;
+    }
+
+    /* Tooltip */
+    .chart-tooltip {
+      position: absolute;
+      display: none;
+      background: rgba(15, 23, 42, 0.94);
+      color: #ffffff;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 10px;
+      pointer-events: none;
+      z-index: 999;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      white-space: nowrap;
+      line-height: 1.45;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-box {
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 16px 20px;
+      max-width: 460px;
+      width: 90%;
+      box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-box h3 {
+      font-size: 14px;
+      color: #0b1f3a;
+      margin-bottom: 6px;
+    }
+
+    .modal-box p {
+      font-size: 12px;
+      color: #475569;
+      line-height: 1.45;
+      margin-bottom: 12px;
+    }
+
+    .modal-close {
+      background: #1976d2;
+      color: #fff;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 11px;
+      cursor: pointer;
+      float: right;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ================= SIDEBAR ================= -->
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <div class="volcano-logo" onclick="toggleSimulacionTiempoReal()"
+        title="Haz clic para activar/pausar simulación en vivo">
+        <svg viewBox="0 0 64 64" fill="none">
+          <circle cx="28" cy="14" r="7" stroke="#ffffff" stroke-width="2.2" />
+          <circle cx="36" cy="11" r="9" stroke="#ffffff" stroke-width="2.2" />
+          <circle cx="44" cy="16" r="6" stroke="#ffffff" stroke-width="2.2" />
+          <circle cx="32" cy="27" r="2.2" fill="#ef4444" />
+          <circle cx="37" cy="24" r="1.8" fill="#f97316" />
+          <path d="M12 52L26 28L31 33L37 28L52 52H12Z" stroke="#ffffff" stroke-width="2.5"
+            fill="rgba(255,255,255,0.05)" />
+          <path d="M26 28L32 39L37 28" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" />
+          <line x1="8" y1="52" x2="56" y2="52" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" />
+        </svg>
+      </div>
+
+      <ul class="nav-menu">
+        <li class="nav-item active" onclick="cambiarSeccion(this, 'resumen')">
+          <svg viewBox="0 0 24 24">
+            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+          </svg>
+          <span>Resumen</span>
+        </li>
+        <li class="nav-item" onclick="cambiarSeccion(this, 'temporal')">
+          <svg viewBox="0 0 24 24">
+            <path d="M3.5 12h3l2-5 4 10 3-7 1.5 2h3.5v-2h-2.5l-2.5-3.5-3 7-4-10-3 6.5h-3.5v2z" />
+          </svg>
+          <span>1. Señales juntas</span>
+        </li>
+        <li class="nav-item" onclick="cambiarSeccion(this, 'filtro')">
+          <svg viewBox="0 0 24 24">
+            <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z" />
+          </svg>
+          <span>2. Depuración</span>
+        </li>
+        <li class="nav-item" onclick="cambiarSeccion(this, 'fft')">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 19h4V9H4v10zm6 0h4V5h-4v14zm6 0h4v-7h-4v7z" />
+          </svg>
+          <span>FFT</span>
+        </li>
+        <li class="nav-item" onclick="cambiarSeccion(this, 'snr')">
+          <svg viewBox="0 0 24 24">
+            <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z" />
+          </svg>
+          <span>SNR</span>
+        </li>
+        <li class="nav-item" onclick="cambiarSeccion(this, 'alertas')">
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
+          </svg>
+          <span>Alertas</span>
+          <span class="badge-alert" id="sideBadge">1</span>
+        </li>
+        <li class="nav-item" onclick="cambiarSeccion(this, 'reportes')">
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
+          </svg>
+          <span>Reportes</span>
+        </li>
+      </ul>
+    </div>
+
+    <div class="station-info">
+      <div class="station-info-title">ESTACIÓN SISMOLÓGICA</div>
+      <div class="station-row"><span>Volcán:</span> <span>Volcán del Sur</span></div>
+      <div class="station-row"><span>Estación:</span> <span>VS-01</span></div>
+      <div class="station-row"><span>Ubicación:</span> <span>-16.372°, -71.584°</span></div>
+      <div class="station-row"><span>Frecuencia:</span> <span>200 Hz</span></div>
+      <div class="station-row" style="margin-top: 3px;">
+        <span>Estado:</span>
+        <span style="color:#22c55e; font-weight:600;"><span class="dot-green"></span>Operativa</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ================= MAIN CONTENT ================= -->
+  <main class="main-content">
+
+    <!-- TOP HEADER -->
+    <header class="top-header">
+      <div class="header-titles">
+        <h1>Monitoreo Sismográfico Volcánico</h1>
+        <p>Discriminación visual de componentes de ruido vs microtemblores volcánicos</p>
+      </div>
+
+      <div class="header-right">
+        <div class="alert-pill" id="volcanoAlertPill">
+          <svg class="alert-pill-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
+          </svg>
+          <div class="alert-pill-text">
+            <strong id="pillTitle">Estado del volcán: ALERTA</strong>
+            <span id="pillSub">Actividad sísmica anómala detectada</span>
+          </div>
+        </div>
+
+        <svg class="volcano-thumbnail" viewBox="0 0 160 90" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#38bdf8" />
+              <stop offset="50%" stop-color="#bae6fd" />
+              <stop offset="100%" stop-color="#e2e8f0" />
+            </linearGradient>
+            <linearGradient id="mtnGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#475569" />
+              <stop offset="100%" stop-color="#1e293b" />
+            </linearGradient>
+          </defs>
+          <rect width="160" height="90" fill="url(#skyGrad)" />
+          <ellipse cx="80" cy="18" rx="20" ry="12" fill="rgba(241,245,249,0.95)" />
+          <polygon points="10,90 76,32 86,32 150,90" fill="url(#mtnGrad)" />
+          <polygon points="76,32 86,32 94,44 88,41 83,46 79,42 74,47 68,43" fill="#ffffff" opacity="0.95" />
+        </svg>
+
+        <div class="clock-system">
+          <div class="clock-row">
+            <svg style="width:13px; height:13px; fill:#64748b;" viewBox="0 0 24 24">
+              <path
+                d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
+            </svg>
+            <span id="liveDate">15 Abr 2025</span>
+            <span id="liveTime" style="font-family:monospace; margin-left:2px;">10:24:17</span>
+          </div>
+          <div class="system-status">
+            <span class="dot-green"></span>
+            Sistema en línea
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <button class="btn-action" id="btnPlayLive" onclick="toggleSimulacionTiempoReal()">
+            <span id="playLabel">▶ En vivo</span>
+          </button>
+          <button class="btn-action btn-primary" onclick="togglePanelControles()">
+            ⚙️ Parámetros
+          </button>
+          <button class="btn-action" onclick="resetValoresPorDefecto()">
+            🔄 Reset
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- INSTRUCTION BANNER (CORRESPONDIENTE A LA INDICACIÓN DEL PROFESOR) -->
+    <div class="professor-guide-banner">
+      <div>
+        <strong>📌 Criterio de Análisis:</strong>
+        Comparación conjunta para saber visualmente "quién es quién":
+      </div>
+      <div class="banner-tags">
+        <span class="tag-amp" style="color:#9333ea; background:#f3e8ff;">Mayor Amplitud: <b>Ruido Eléctrico (2.20)</b>
+          [60 Hz]</span>
+        <span class="tag-amp" style="color:#b45309; background:#fef3c7;">Amplitud Media: <b>Tránsito (1.40)</b> [12
+          Hz]</span>
+        <span class="tag-amp" style="color:#1d4ed8; background:#dbeafe;">Menor Frecuencia / Útil: <b>Volcánica
+            (~1.25)</b> [1.2–3.5 Hz]</span>
+      </div>
+    </div>
+
+    <!-- VIEW TOGGLE (4 GRAFICAS vs 2 GRANDES) -->
+    <div class="view-toggle-bar">
+      <span style="font-weight:700; color:#334155;">Estructura del Trabajo:</span>
+      <div class="view-mode-tabs">
+        <span class="v-tab active" id="tabMode4" onclick="setViewMode(4)">Dashboard Completo (4 Gráficas)</span>
+        <span class="v-tab" id="tabMode2" onclick="setViewMode(2)">Enfoque del Profesor (2 Gráficas Grandes:
+          Superpuestas + Depuración)</span>
+      </div>
+    </div>
+
+    <!-- CONTROLS PANEL -->
+    <div class="controls-panel" id="controlsPanel">
+      <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#0b1f3a;">
+        <span>🎛️ Variación de Amplitudes y Frecuencias (Observa el cambio de amplitud en la Gráfica 1)</span>
+        <span style="color:#64748b; font-weight:400;">Ajusta los sliders para comparar cómo cambia la jerarquía de
+          amplitudes</span>
+      </div>
+      <div class="controls-grid">
+        <div class="control-group">
+          <label style="color:#2563eb;">● Frecuencia volcánica 1: <span class="val-badge" id="lblF1">1.2
+              Hz</span></label>
+          <input type="range" id="rngF1" min="0.5" max="2.5" step="0.1" value="1.2"
+            oninput="actualizarParametro('f1', this.value)">
+        </div>
+        <div class="control-group">
+          <label style="color:#2563eb;">● Frecuencia volcánica 2: <span class="val-badge" id="lblF2">3.5
+              Hz</span></label>
+          <input type="range" id="rngF2" min="2.0" max="5.0" step="0.1" value="3.5"
+            oninput="actualizarParametro('f2', this.value)">
+        </div>
+        <div class="control-group">
+          <label style="color:#f59e0b;">● Ruido tránsito (12 Hz): <span class="val-badge"
+              id="lblAmpTrans">1.40</span></label>
+          <input type="range" id="rngAmpTrans" min="0.0" max="3.0" step="0.1" value="1.4"
+            oninput="actualizarParametro('ampTrans', this.value)">
+        </div>
+        <div class="control-group">
+          <label style="color:#9333ea;">● Ruido eléctrico (60 Hz): <span class="val-badge"
+              id="lblAmpElec">2.20</span></label>
+          <input type="range" id="rngAmpElec" min="0.0" max="4.0" step="0.1" value="2.2"
+            oninput="actualizarParametro('ampElec', this.value)">
+        </div>
+        <div class="control-group">
+          <label style="color:#64748b;">● Ruido blanco aleatorio: <span class="val-badge"
+              id="lblAmpRand">0.90</span></label>
+          <input type="range" id="rngAmpRand" min="0.0" max="2.5" step="0.1" value="0.9"
+            oninput="actualizarParametro('ampRand', this.value)">
+        </div>
+        <div class="control-group">
+          <label style="color:#0f172a;">● Umbral de alerta RMS: <span class="val-badge"
+              id="lblUmbral">0.500</span></label>
+          <input type="range" id="rngUmbral" min="0.2" max="1.0" step="0.02" value="0.50"
+            oninput="actualizarParametro('umbral', this.value)">
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI ROW (6 METRICS) -->
+    <section class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <svg class="kpi-icon" style="color:#0284c7;" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+          <div class="kpi-title">Frecuencias detectadas</div>
+        </div>
+        <div class="freq-list">
+          <div><b style="color:#2563eb;" id="freqItem1">1.2 Hz</b> <span style="color:#2563eb;">(volcánica)</span></div>
+          <div><b style="color:#2563eb;" id="freqItem2">3.5 Hz</b> <span style="color:#2563eb;">(volcánica)</span></div>
+          <div><b style="color:#f59e0b;">12 Hz</b> <span style="color:#f59e0b;">(tránsito)</span></div>
+          <div><b style="color:#9333ea;">60 Hz</b> <span style="color:#9333ea;">(eléctrico)</span></div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <svg class="kpi-icon" style="color:#7c3aed;" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z" />
+          </svg>
+          <div class="kpi-title">SNR antes</div>
+        </div>
+        <div class="kpi-value" style="color:#4338ca;" id="kpiSnrAntes">-9.95 dB</div>
+        <div class="kpi-subtitle">Señal en ruido</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <svg class="kpi-icon" style="color:#16a34a;" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M5 13.5h3V19H5zM10.6 9.5h2.8v9.5h-2.8zm5.6-4.5H19v14h-2.8z" />
+          </svg>
+          <div class="kpi-title">SNR después</div>
+        </div>
+        <div class="kpi-value" style="color:#15803d;" id="kpiSnrDespues">8.94 dB</div>
+        <div class="kpi-subtitle">Señal filtrada</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <svg class="kpi-icon" style="color:#ea580c;" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M5 4v2h10.59L3 18.59 4.41 20 17 7.41V18h2V4z" />
+          </svg>
+          <div class="kpi-title">Mejora</div>
+        </div>
+        <div class="kpi-value" style="color:#ea580c;" id="kpiMejora">18.89 dB</div>
+        <div class="kpi-subtitle">Incremento de SNR</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <svg class="kpi-icon" style="color:#0284c7;" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.2">
+            <path d="M3 12h4l3 8 4-16 3 8h4" />
+          </svg>
+          <div class="kpi-title">RMS banda volcánica</div>
+        </div>
+        <div class="kpi-value" style="color:#0f2b48;" id="kpiRms">0.673</div>
+        <div class="kpi-subtitle">(0.5 – 5 Hz)</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <svg class="kpi-icon" style="color:#ea580c;" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z" />
+          </svg>
+          <div class="kpi-title">Umbral</div>
+        </div>
+        <div class="kpi-value" style="color:#0f172a;" id="kpiUmbral">0.500</div>
+        <div class="kpi-subtitle">Valor de referencia</div>
+      </div>
+    </section>
+
+    <!-- ================= GRAPHS GRID ================= -->
+    <section class="graphs-grid" id="mainGraphsContainer">
+
+      <!-- ================= GRÁFICA 1: SEÑALES SUPERPUESTAS (SOLICITADA POR EL PROFESOR) ================= -->
+      <div class="graph-card card-superpuestas">
+        <div class="graph-header">
+          <div class="graph-title">
+            <svg style="fill:#0284c7;" viewBox="0 0 24 24">
+              <path d="M3.5 12h3l2-5 4 10 3-7 1.5 2h3.5v-2h-2.5l-2.5-3.5-3 7-4-10-3 6.5h-3.5v2z" />
+            </svg>
+            Gráfica 1 — Señales superpuestas (Identificación visual: ¿Quién es quién?)
+          </div>
+          <span style="font-size:10px; color:#475569; font-weight:600;">Comparación conjunta de amplitud y
+            frecuencia</span>
+        </div>
+
+        <!-- LEYENDA CLARA REQUERIDA POR EL PROFESOR -->
+        <div class="prof-legend-bar">
+          <div class="leg-chip" id="leg_volc" onclick="toggleTrace('volc')" title="Clic para ocultar/mostrar">
+            <span class="leg-line" style="background:#2563eb;"></span>
+            <span style="color:#1d4ed8;">Volcánica 1.2–3.5 Hz (Amp ~1.25)</span>
+          </div>
+          <span style="color:#cbd5e1;">|</span>
+          <div class="leg-chip" id="leg_trans" onclick="toggleTrace('trans')" title="Clic para ocultar/mostrar">
+            <span class="leg-line" style="background:#f59e0b;"></span>
+            <span style="color:#b45309;">Tránsito 12 Hz (Amp 1.40)</span>
+          </div>
+          <span style="color:#cbd5e1;">|</span>
+          <div class="leg-chip" id="leg_elec" onclick="toggleTrace('elec')" title="Clic para ocultar/mostrar">
+            <span class="leg-line" style="background:#9333ea;"></span>
+            <span style="color:#7e22ce;">Eléctrico 60 Hz (Amp 2.20 - Mayor)</span>
+          </div>
+          <span style="color:#cbd5e1;">|</span>
+          <div class="leg-chip dimmed" id="leg_rand" onclick="toggleTrace('rand')"
+            title="Clic para mostrar/ocultar ruido blanco aleatorio">
+            <span class="leg-line" style="background:#0d9488;"></span>
+            <span style="color:#0f766e;">Ruido blanco (0.90)</span>
+          </div>
+          <span style="color:#cbd5e1;">|</span>
+          <div class="leg-chip" id="leg_tot" onclick="toggleTrace('tot')" title="Clic para ocultar/mostrar suma">
+            <span class="leg-line" style="background:#64748b; height:1.5px; border-top:1px dashed #0f172a;"></span>
+            <span style="color:#334155;">Señal total/corrupta</span>
+          </div>
+        </div>
+
+        <div class="graph-canvas-container" onmousemove="handleMouseMove(event, 1)" onmouseleave="handleMouseLeave()">
+          <canvas id="canvasPlot1"></canvas>
+        </div>
+      </div>
+
+      <!-- ================= GRÁFICA 2: ESPECTRO FRECUENCIAL (FFT) ================= -->
+      <div class="graph-card card-fft">
+        <div class="graph-header">
+          <div class="graph-title">
+            <svg style="fill:#0284c7;" viewBox="0 0 24 24">
+              <path d="M4 19h4V9H4v10zm6 0h4V5h-4v14zm6 0h4v-7h-4v7z" />
+            </svg>
+            Espectro frecuencial (FFT): Separación por frecuencias
+          </div>
+          <span style="font-size:10px; color:#0284c7; font-weight:600;">Banda volcánica 0.5 – 5 Hz</span>
+        </div>
+        <div class="graph-canvas-container" onmousemove="handleMouseMove(event, 2)" onmouseleave="handleMouseLeave()">
+          <canvas id="canvasPlot2"></canvas>
+        </div>
+      </div>
+
+      <!-- ================= GRÁFICA 3: DEPURACIÓN / FILTRADO (SOLICITADA POR EL PROFESOR) ================= -->
+      <div class="graph-card card-depuracion">
+        <div class="graph-header">
+          <div class="graph-title">
+            <svg style="fill:#ea580c;" viewBox="0 0 24 24">
+              <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z" />
+            </svg>
+            Gráfica 2 — Depuración (Señal corrupta vs Señal recuperada / filtrada)
+          </div>
+          <div class="graph-legend">
+            <div class="legend-item">
+              <span class="legend-bar" style="background-color: #94a3b8;"></span>
+              <span>Señal corrupta (con ruido 12 y 60 Hz)</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-bar" style="background-color: #ea580c;"></span>
+              <span>Señal depurada/filtrada (0.5 – 5 Hz)</span>
+            </div>
+          </div>
+        </div>
+        <div class="graph-canvas-container" onmousemove="handleMouseMove(event, 3)" onmouseleave="handleMouseLeave()">
+          <canvas id="canvasPlot3"></canvas>
+        </div>
+      </div>
+
+      <!-- ================= GRÁFICA 4: VALIDACIÓN REFERENCIA VS RECUPERADA ================= -->
+      <div class="graph-card card-comparacion">
+        <div class="graph-header">
+          <div class="graph-title">
+            <svg style="fill:#0284c7;" viewBox="0 0 24 24">
+              <path d="M3.5 12h3l2-5 4 10 3-7 1.5 2h3.5v-2h-2.5l-2.5-3.5-3 7-4-10-3 6.5h-3.5v2z" />
+            </svg>
+            Validación de filtrado: Señal volcánica original vs Señal recuperada
+          </div>
+          <div class="graph-legend">
+            <div class="legend-item">
+              <span class="legend-bar" style="background-color: #0284c7;"></span>
+              <span>Volcánica pura de referencia</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-bar" style="background-color: #ea580c;"></span>
+              <span>Señal recuperada (Mejora: +18.89 dB)</span>
+            </div>
+          </div>
+        </div>
+        <div class="graph-canvas-container" onmousemove="handleMouseMove(event, 4)" onmouseleave="handleMouseLeave()">
+          <canvas id="canvasPlot4"></canvas>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- BOTTOM ROW: ALERT BANNER + WORKFLOW -->
+    <section class="bottom-row">
+      <div class="bottom-alert" id="bottomAlertBox">
+        <div class="bottom-alert-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
+          </svg>
+        </div>
+        <div class="bottom-alert-body">
+          <div class="bottom-alert-title" id="bottomAlertTitle">ALERTA VOLCÁNICA: actividad anómala detectada</div>
+          <div class="bottom-alert-desc" id="bottomAlertDesc">
+            Se han identificado microtemblores en la banda de 0.5 – 5 Hz con amplitud superior al umbral. Se recomienda
+            mantener vigilancia y análisis continuo.
+          </div>
+        </div>
+      </div>
+
+      <div class="workflow-card">
+        <div class="workflow-title">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+          </svg>
+          Flujo de trabajo del análisis (haz clic en cada paso)
+        </div>
+        <div class="stepper">
+          <div class="step-node" onclick="mostrarPaso(1)">
+            <div class="step-circle">1</div>
+            <div class="step-label">Cargar<br>datos</div>
+          </div>
+          <div class="step-node" onclick="mostrarPaso(2)">
+            <div class="step-circle">2</div>
+            <div class="step-label">Señales<br>juntas</div>
+          </div>
+          <div class="step-node" onclick="mostrarPaso(3)">
+            <div class="step-circle">3</div>
+            <div class="step-label">Aplicar<br>FFT</div>
+          </div>
+          <div class="step-node" onclick="mostrarPaso(4)">
+            <div class="step-circle">4</div>
+            <div class="step-label">Identificar<br>ruido</div>
+          </div>
+          <div class="step-node" onclick="mostrarPaso(5)">
+            <div class="step-circle">5</div>
+            <div class="step-label">Depurar<br>(Filtrar)</div>
+          </div>
+          <div class="step-node" onclick="mostrarPaso(6)">
+            <div class="step-circle">6</div>
+            <div class="step-label">Evaluar<br>SNR</div>
+          </div>
+          <div class="step-node" onclick="mostrarPaso(7)">
+            <div class="step-circle">7</div>
+            <div class="step-label">Emitir<br>alerta</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="chartTooltip" class="chart-tooltip"></div>
+  <div id="modalOverlay" class="modal-overlay" onclick="cerrarModal(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <h3 id="modalTitle">Detalle del Paso</h3>
+      <p id="modalBody">Descripción técnica.</p>
+      <button class="modal-close" onclick="cerrarModal()">Cerrar</button>
+    </div>
+  </div>
+
+  <!-- SCRIPT LOGIC -->
+  <script>
+    const fs = 200;
+    const duracion = 60;
+    const totalN = fs * duracion;
+    let timeOffset = 0.0;
+    let isLiveSim = false;
+    let liveTimer = null;
+
+    let params = {
+      f1: 1.2,
+      f2: 3.5,
+      ampTrans: 1.4,
+      ampElec: 2.2,
+      ampRand: 0.9,
+      umbral: 0.50
+    };
+
+    // Toggles for Graph 1 traces
+    let traceActive = {
+      volc: true,   // Señal volcánica combinada (Azul)
+      trans: true,  // Tránsito 12 Hz (Ámbar)
+      elec: true,   // Eléctrico 60 Hz (Púrpura)
+      rand: false,  // Ruido aleatorio blanco (Teal)
+      tot: true     // Señal total/corrupta (Gris oscuro)
+    };
+
+    let t = new Float64Array(totalN);
+    let s_volcanica = new Float64Array(totalN);
+    let s_transito = new Float64Array(totalN);
+    let s_electrico = new Float64Array(totalN);
+    let s_aleatorio = new Float64Array(totalN);
+    let senal_corrupta = new Float64Array(totalN);
+    let senal_limpia = new Float64Array(totalN);
+
+    // SOS Sections for Butterworth 4th order bandpass [0.5, 5] Hz at fs=200
+    const sos_secs = [
+      { b: [0.00518384, 0.01036768, 0.00518384], a: [1.0, -1.82110263, 0.83547192] },
+      { b: [1.0, -2.0, 1.0], a: [1.0, -1.97495092, 0.97519183] },
+      { b: [1.0, 0.0, -1.0], a: [1.0, -1.88421066, 0.89369984] },
+      { b: [1.0, 0.0, -1.0], a: [1.0, -1.94291129, 0.94784407] }
+    ];
+
+    function applySosFilter(input) {
+      let x = Float64Array.from(input);
+      for (let s = 0; s < sos_secs.length; s++) {
+        let { b, a } = sos_secs[s], y = new Float64Array(x.length), x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+        for (let i = 0; i < x.length; i++) {
+          let xi = x[i], yi = b[0] * xi + b[1] * x1 + b[2] * x2 - a[1] * y1 - a[2] * y2;
+          x2 = x1; x1 = xi; y2 = y1; y1 = yi; y[i] = yi;
+        }
+        x = y;
+      }
+      for (let s = 0; s < sos_secs.length; s++) {
+        let { b, a } = sos_secs[s], y = new Float64Array(x.length), x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+        for (let i = x.length - 1; i >= 0; i--) {
+          let xi = x[i], yi = b[0] * xi + b[1] * x1 + b[2] * x2 - a[1] * y1 - a[2] * y2;
+          x2 = x1; x1 = xi; y2 = y1; y1 = yi; y[i] = yi;
+        }
+        x = y;
+      }
+      return x;
+    }
+
+    function Mulberry32(seed) {
+      return function () {
+        var t = seed += 0x6D2B79F5;
+        t = Math.imul(t ^ t >>> 15, t | 1);
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+
+    function normalRandom(rng) {
+      let u = 0, v = 0;
+      while (u === 0) u = rng();
+      while (v === 0) v = rng();
+      return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    }
+
+    let fftFreqs = [];
+    let fftMags = [];
+
+    function computeFFT() {
+      const N_fft = 4096;
+      let real = new Float64Array(N_fft), imag = new Float64Array(N_fft);
+      for (let i = 0; i < N_fft; i++) real[i] = senal_corrupta[i];
+
+      for (let i = 0, j = 0; i < N_fft; i++) {
+        if (j > i) {
+          let tr = real[i]; real[i] = real[j]; real[j] = tr;
+          let ti = imag[i]; imag[i] = imag[j]; imag[j] = ti;
+        }
+        let m = N_fft >> 1;
+        while (m >= 1 && j >= m) { j -= m; m >>= 1; }
+        j += m;
+      }
+
+      for (let s = 1; s <= Math.log2(N_fft); s++) {
+        let m = 1 << s, m2 = m >> 1, theta = -2 * Math.PI / m;
+        let w_r = Math.cos(theta), w_i = Math.sin(theta);
+        for (let k = 0; k < N_fft; k += m) {
+          let u_r = 1.0, u_i = 0.0;
+          for (let j = 0; j < m2; j++) {
+            let t_r = u_r * real[k + j + m2] - u_i * imag[k + j + m2];
+            let t_i = u_r * imag[k + j + m2] + u_i * real[k + j + m2];
+            let u_new_r = u_r * w_r - u_i * w_i, u_new_i = u_r * w_i + u_i * w_r;
+            u_r = u_new_r; u_i = u_new_i;
+            real[k + j + m2] = real[k + j] - t_r; imag[k + j + m2] = imag[k + j] - t_i;
+            real[k + j] += t_r; imag[k + j] += t_i;
+          }
+        }
+      }
+
+      fftFreqs = []; fftMags = [];
+      const df = fs / N_fft;
+      for (let k = 0; k <= Math.floor(80 / df); k++) {
+        fftFreqs.push(k * df);
+        fftMags.push((2.0 / N_fft) * Math.sqrt(real[k] * real[k] + imag[k] * imag[k]));
+      }
+    }
+
+    function recalcularTodo() {
+      const rng = Mulberry32(7);
+
+      for (let i = 0; i < totalN; i++) {
+        const time = (i / fs) + timeOffset;
+        t[i] = i / fs;
+
+        // 1. Actividad Volcánica: Microtemblores 1.2 Hz y 3.5 Hz
+        s_volcanica[i] = 0.8 * Math.sin(2 * Math.PI * params.f1 * time) +
+          0.45 * Math.sin(2 * Math.PI * params.f2 * time);
+
+        // 2. Ruido de Tránsito pesado: 12 Hz (amplitud 1.4)
+        s_transito[i] = params.ampTrans * Math.sin(2 * Math.PI * 12.0 * time);
+
+        // 3. Ruido Eléctrico: 60 Hz (amplitud 2.2 - La de mayor amplitud)
+        s_electrico[i] = params.ampElec * Math.sin(2 * Math.PI * 60.0 * time);
+
+        // 4. Ruido aleatorio blanco
+        s_aleatorio[i] = params.ampRand * normalRandom(rng);
+
+        // Señal total corrupta
+        senal_corrupta[i] = s_volcanica[i] + s_transito[i] + s_electrico[i] + s_aleatorio[i];
+      }
+
+      // Filtrado pasa-banda Butterworth 0.5 a 5 Hz
+      senal_limpia = applySosFilter(senal_corrupta);
+
+      // SNR
+      let pot_u = 0, pot_ra = 0, pot_rd = 0, pot_l = 0;
+      for (let i = 0; i < totalN; i++) {
+        let u = s_volcanica[i], ra = senal_corrupta[i] - u, rd = senal_limpia[i] - u;
+        pot_u += u * u; pot_ra += ra * ra; pot_rd += rd * rd; pot_l += senal_limpia[i] * senal_limpia[i];
+      }
+      let snr_a = 10 * Math.log10(pot_u / Math.max(1e-12, pot_ra));
+      let snr_d = 10 * Math.log10(pot_u / Math.max(1e-12, pot_rd));
+      let mej = snr_d - snr_a;
+      let rms = Math.sqrt(pot_l / totalN);
+      let alertOn = rms >= params.umbral;
+
+      document.getElementById("kpiSnrAntes").innerText = snr_a.toFixed(2) + " dB";
+      document.getElementById("kpiSnrDespues").innerText = snr_d.toFixed(2) + " dB";
+      document.getElementById("kpiMejora").innerText = mej.toFixed(2) + " dB";
+      document.getElementById("kpiRms").innerText = rms.toFixed(3);
+      document.getElementById("kpiUmbral").innerText = params.umbral.toFixed(3);
+      document.getElementById("freqItem1").innerText = params.f1.toFixed(1) + " Hz";
+      document.getElementById("freqItem2").innerText = params.f2.toFixed(1) + " Hz";
+
+      const pill = document.getElementById("volcanoAlertPill"), pillT = document.getElementById("pillTitle"), pillS = document.getElementById("pillSub");
+      const bot = document.getElementById("bottomAlertBox"), botT = document.getElementById("bottomAlertTitle"), botD = document.getElementById("bottomAlertDesc");
+      const badge = document.getElementById("sideBadge");
+
+      if (alertOn) {
+        pill.className = "alert-pill"; pillT.innerText = "Estado del volcán: ALERTA"; pillS.innerText = "Actividad sísmica anómala detectada";
+        bot.className = "bottom-alert"; botT.innerText = "ALERTA VOLCÁNICA: actividad anómala detectada";
+        botD.innerText = `Microtemblores en banda 0.5 - 5 Hz con RMS (${rms.toFixed(3)}) superando umbral (${params.umbral.toFixed(3)}).`;
+        badge.innerText = "1"; badge.style.display = "flex";
+      } else {
+        pill.className = "alert-pill normal"; pillT.innerText = "Estado del volcán: NORMAL"; pillS.innerText = "Actividad sísmica dentro del rango seguro";
+        bot.className = "bottom-alert normal"; botT.innerText = "CONDICIÓN NORMAL: sin actividad anómala";
+        botD.innerText = `RMS en banda (${rms.toFixed(3)}) inferior al umbral (${params.umbral.toFixed(3)}). Monitoreo preventivo.`;
+        badge.innerText = "0"; badge.style.display = "none";
+      }
+
+      computeFFT();
+      renderAllCharts();
+    }
+
+    function setupCanvas(canvasId) {
+      const canvas = document.getElementById(canvasId);
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+      return { ctx, width: rect.width, height: rect.height };
+    }
+
+    // ================= DIBUJO DE LA GRÁFICA 1: SEÑALES SUPERPUESTAS JUNTAS =================
+    function drawPlot1() {
+      const { ctx, width, height } = setupCanvas("canvasPlot1");
+      const padLeft = 36, padRight = 10, padTop = 10, padBottom = 22;
+      const plotW = width - padLeft - padRight;
+      const plotH = height - padTop - padBottom;
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+
+      const yMin = -6.0, yMax = 6.0;
+      const xMin = 0.0, xMax = 5.0;
+
+      // Eje Y
+      const yTicks = [-6, -4, -2, 0, 2, 4, 6];
+      ctx.strokeStyle = "#e2e8f0";
+      ctx.lineWidth = 1;
+      ctx.fillStyle = "#64748b";
+      ctx.font = "9px sans-serif";
+      ctx.textAlign = "right";
+
+      for (let val of yTicks) {
+        const yPos = padTop + plotH * (1 - (val - yMin) / (yMax - yMin));
+        ctx.beginPath();
+        ctx.moveTo(padLeft, yPos);
+        ctx.lineTo(padLeft + plotW, yPos);
+        ctx.stroke();
+        ctx.fillText(val.toString(), padLeft - 5, yPos + 3);
+      }
+
+      // Eje X
+      const xTicks = [0, 1, 2, 3, 4, 5];
+      ctx.textAlign = "center";
+      for (let val of xTicks) {
+        const xPos = padLeft + plotW * ((val - xMin) / (xMax - xMin));
+        ctx.beginPath();
+        ctx.moveTo(xPos, padTop);
+        ctx.lineTo(xPos, padTop + plotH);
+        ctx.stroke();
+        ctx.fillText(val.toString(), xPos, padTop + plotH + 13);
+      }
+
+      ctx.fillStyle = "#334155";
+      ctx.font = "9.5px sans-serif";
+      ctx.fillText("Tiempo (s)", padLeft + plotW / 2, height - 2);
+
+      ctx.save();
+      ctx.translate(10, padTop + plotH / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = "center";
+      ctx.fillText("Amplitud", 0, 0);
+      ctx.restore();
+
+      ctx.strokeStyle = "#94a3b8";
+      ctx.strokeRect(padLeft, padTop, plotW, plotH);
+
+      const pointsToDraw = Math.floor(xMax * fs);
+
+      function drawTrace(arr, color, lw, dash = []) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = lw;
+        if (dash.length) ctx.setLineDash(dash);
+        for (let i = 0; i <= pointsToDraw; i++) {
+          const px = padLeft + plotW * ((t[i] - xMin) / (xMax - xMin));
+          const py = padTop + plotH * (1 - (arr[i] - yMin) / (yMax - yMin));
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // 1. Señal Total Corrupta (Gris translúcido / de fondo)
+      if (traceActive.tot) {
+        drawTrace(senal_corrupta, "rgba(51, 65, 85, 0.45)", 1.2);
+      }
+
+      // 2. Ruido Blanco Aleatorio (Teal, opcional)
+      if (traceActive.rand) {
+        drawTrace(s_aleatorio, "#0d9488", 1.2);
+      }
+
+      // 3. Ruido Eléctrico (Púrpura, Mayor amplitud: 2.20, oscila rápido a 60 Hz)
+      if (traceActive.elec) {
+        drawTrace(s_electrico, "#9333ea", 1.5);
+      }
+
+      // 4. Ruido de Tránsito (Ámbar / Naranja, Amplitud 1.40, oscila a 12 Hz)
+      if (traceActive.trans) {
+        drawTrace(s_transito, "#f59e0b", 1.8);
+      }
+
+      // 5. Señal Volcánica (Azul, Amplitud ~1.25, ondas suaves lentas de 1.2 y 3.5 Hz)
+      if (traceActive.volc) {
+        drawTrace(s_volcanica, "#2563eb", 2.2);
+      }
+    }
+
+    // ================= DIBUJO DEL GRÁFICO 2: FFT =================
+    function drawPlot2() {
+      const { ctx, width, height } = setupCanvas("canvasPlot2");
+      const padLeft = 44, padRight = 10, padTop = 10, padBottom = 22;
+      const plotW = width - padLeft - padRight;
+      const plotH = height - padTop - padBottom;
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+
+      const xMin = 0, xMax = 80;
+      const logMin = -2, logMax = 1.3;
+
+      function yToPix(val) {
+        let clamped = Math.max(0.01, Math.min(15, val));
+        let logVal = Math.log10(clamped);
+        return padTop + plotH * (1 - (logVal - logMin) / (logMax - logMin));
+      }
+
+      // Banda volcánica sombreada
+      const xBandStart = padLeft + plotW * (0.5 / xMax);
+      const xBandEnd = padLeft + plotW * (5.0 / xMax);
+      ctx.fillStyle = "rgba(14, 165, 233, 0.12)";
+      ctx.fillRect(xBandStart, padTop, xBandEnd - xBandStart, plotH);
+
+      ctx.setLineDash([3, 3]);
+      ctx.strokeStyle = "#0284c7";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(xBandStart, padTop); ctx.lineTo(xBandStart, padTop + plotH);
+      ctx.moveTo(xBandEnd, padTop); ctx.lineTo(xBandEnd, padTop + plotH);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = "#0284c7";
+      ctx.font = "8.5px sans-serif";
+      ctx.fillText("Banda volcánica 0.5 – 5 Hz", xBandStart + 3, padTop + 12);
+
+      const yTicksLog = [{ label: "10⁻²", val: 0.01 }, { label: "10⁻¹", val: 0.1 }, { label: "10⁰", val: 1.0 }, { label: "10¹", val: 10.0 }];
+      ctx.strokeStyle = "#e2e8f0";
+      ctx.fillStyle = "#64748b";
+      ctx.font = "8.5px sans-serif";
+      ctx.textAlign = "right";
+
+      for (let tk of yTicksLog) {
+        let yPos = yToPix(tk.val);
+        ctx.beginPath(); ctx.moveTo(padLeft, yPos); ctx.lineTo(padLeft + plotW, yPos); ctx.stroke();
+        ctx.fillText(tk.label, padLeft - 5, yPos + 3);
+      }
+
+      const xTicks = [0, 10, 20, 30, 40, 50, 60, 70, 80];
+      ctx.textAlign = "center";
+      for (let val of xTicks) {
+        let xPos = padLeft + plotW * (val / xMax);
+        ctx.beginPath(); ctx.moveTo(xPos, padTop); ctx.lineTo(xPos, padTop + plotH); ctx.stroke();
+        ctx.fillText(val.toString(), xPos, padTop + plotH + 13);
+      }
+
+      ctx.fillStyle = "#334155";
+      ctx.font = "9.5px sans-serif";
+      ctx.fillText("Frecuencia (Hz)", padLeft + plotW / 2, height - 2);
+
+      ctx.save();
+      ctx.translate(11, padTop + plotH / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = "center";
+      ctx.fillText("Magnitud", 0, 0);
+      ctx.restore();
+
+      ctx.strokeStyle = "#94a3b8";
+      ctx.strokeRect(padLeft, padTop, plotW, plotH);
+
+      ctx.beginPath();
+      ctx.strokeStyle = "#0284c7";
+      ctx.lineWidth = 1.2;
+      for (let i = 0; i < fftFreqs.length; i++) {
+        let freq = fftFreqs[i];
+        if (freq > xMax) break;
+        let px = padLeft + plotW * (freq / xMax);
+        let py = yToPix(fftMags[i]);
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+
+      const peaks = [
+        { freq: params.f1, mag: 0.8, label: `${params.f1.toFixed(1)} Hz (volcán 1)`, color: "#2563eb" },
+        { freq: params.f2, mag: 0.45, label: `${params.f2.toFixed(1)} Hz (volcán 2)`, color: "#2563eb" },
+        { freq: 12.0, mag: params.ampTrans, label: "12 Hz (tránsito)", color: "#f59e0b" },
+        { freq: 60.0, mag: params.ampElec, label: "60 Hz (eléctrico)", color: "#9333ea" }
+      ];
+
+      for (let p of peaks) {
+        let px = padLeft + plotW * (p.freq / xMax);
+        let py = yToPix(p.mag);
+
+        ctx.beginPath();
+        ctx.arc(px, py, 3.5, 0, 2 * Math.PI);
+        ctx.fillStyle = p.color;
+        ctx.fill();
+
+        ctx.fillStyle = p.color;
+        ctx.font = "8px sans-serif";
+        ctx.textAlign = p.freq > 50 ? "right" : "left";
+        let offset = p.freq > 50 ? -6 : 6;
+        ctx.fillText(p.label, px + offset, py - 4);
+      }
+    }
+
+    // ================= DIBUJO DE LA GRÁFICA 3: DEPURACIÓN / FILTRADO =================
+    function drawPlot3() {
+      const { ctx, width, height } = setupCanvas("canvasPlot3");
+      const padLeft = 36, padRight = 10, padTop = 10, padBottom = 22;
+      const plotW = width - padLeft - padRight;
+      const plotH = height - padTop - padBottom;
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+
+      const yMin = -6.0, yMax = 6.0;
+      const xMin = 0.0, xMax = 5.0;
+
+      const yTicks = [-6, -4, -2, 0, 2, 4, 6];
+      ctx.strokeStyle = "#e2e8f0";
+      ctx.fillStyle = "#64748b";
+      ctx.font = "9px sans-serif";
+      ctx.textAlign = "right";
+
+      for (let val of yTicks) {
+        const yPos = padTop + plotH * (1 - (val - yMin) / (yMax - yMin));
+        ctx.beginPath(); ctx.moveTo(padLeft, yPos); ctx.lineTo(padLeft + plotW, yPos); ctx.stroke();
+        ctx.fillText(val.toString(), padLeft - 5, yPos + 3);
+      }
+
+      const xTicks = [0, 1, 2, 3, 4, 5];
+      ctx.textAlign = "center";
+      for (let val of xTicks) {
+        const xPos = padLeft + plotW * ((val - xMin) / (xMax - xMin));
+        ctx.beginPath(); ctx.moveTo(xPos, padTop); ctx.lineTo(xPos, padTop + plotH); ctx.stroke();
+        ctx.fillText(val.toString(), xPos, padTop + plotH + 13);
+      }
+
+      ctx.fillStyle = "#334155";
+      ctx.font = "9.5px sans-serif";
+      ctx.fillText("Tiempo (s)", padLeft + plotW / 2, height - 2);
+
+      ctx.save();
+      ctx.translate(10, padTop + plotH / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = "center";
+      ctx.fillText("Amplitud", 0, 0);
+      ctx.restore();
+
+      ctx.strokeStyle = "#94a3b8";
+      ctx.strokeRect(padLeft, padTop, plotW, plotH);
+
+      const pointsToDraw = Math.floor(xMax * fs);
+
+      // Línea 1: Señal corrupta antes de filtrar (Gris / Azul suave de fondo)
+      ctx.beginPath();
+      ctx.strokeStyle = "#94a3b8";
+      ctx.lineWidth = 1.0;
+      for (let i = 0; i <= pointsToDraw; i++) {
+        const px = padLeft + plotW * ((t[i] - xMin) / (xMax - xMin));
+        const py = padTop + plotH * (1 - (senal_corrupta[i] - yMin) / (yMax - yMin));
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+
+      // Línea 2: Señal depurada / filtrada (Naranja brillante)
+      ctx.beginPath();
+      ctx.strokeStyle = "#ea580c";
+      ctx.lineWidth = 2.0;
+      for (let i = 0; i <= pointsToDraw; i++) {
+        const px = padLeft + plotW * ((t[i] - xMin) / (xMax - xMin));
+        const py = padTop + plotH * (1 - (senal_limpia[i] - yMin) / (yMax - yMin));
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+
+    // ================= DIBUJO DEL GRÁFICO 4: COMPARACIÓN CON REFERENCIA =================
+    function drawPlot4() {
+      const { ctx, width, height } = setupCanvas("canvasPlot4");
+      const padLeft = 36, padRight = 10, padTop = 10, padBottom = 22;
+      const plotW = width - padLeft - padRight;
+      const plotH = height - padTop - padBottom;
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+
+      const yMin = -1.5, yMax = 1.5;
+      const xMin = 0.0, xMax = 5.0;
+
+      const yTicks = [-1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5];
+      ctx.strokeStyle = "#e2e8f0";
+      ctx.fillStyle = "#64748b";
+      ctx.font = "9px sans-serif";
+      ctx.textAlign = "right";
+
+      for (let val of yTicks) {
+        const yPos = padTop + plotH * (1 - (val - yMin) / (yMax - yMin));
+        ctx.beginPath(); ctx.moveTo(padLeft, yPos); ctx.lineTo(padLeft + plotW, yPos); ctx.stroke();
+        ctx.fillText(val.toFixed(1), padLeft - 5, yPos + 3);
+      }
+
+      const xTicks = [0, 1, 2, 3, 4, 5];
+      ctx.textAlign = "center";
+      for (let val of xTicks) {
+        const xPos = padLeft + plotW * ((val - xMin) / (xMax - xMin));
+        ctx.beginPath(); ctx.moveTo(xPos, padTop); ctx.lineTo(xPos, padTop + plotH); ctx.stroke();
+        ctx.fillText(val.toString(), xPos, padTop + plotH + 13);
+      }
+
+      ctx.fillStyle = "#334155";
+      ctx.font = "9.5px sans-serif";
+      ctx.fillText("Tiempo (s)", padLeft + plotW / 2, height - 2);
+
+      ctx.save();
+      ctx.translate(10, padTop + plotH / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = "center";
+      ctx.fillText("Amplitud", 0, 0);
+      ctx.restore();
+
+      ctx.strokeStyle = "#94a3b8";
+      ctx.strokeRect(padLeft, padTop, plotW, plotH);
+
+      const pointsToDraw = Math.floor(xMax * fs);
+
+      // Referencia pura (Azul)
+      ctx.beginPath();
+      ctx.strokeStyle = "#0284c7";
+      ctx.lineWidth = 1.6;
+      for (let i = 0; i <= pointsToDraw; i++) {
+        const px = padLeft + plotW * ((t[i] - xMin) / (xMax - xMin));
+        const py = padTop + plotH * (1 - (s_volcanica[i] - yMin) / (yMax - yMin));
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+
+      // Recuperada (Naranja)
+      ctx.beginPath();
+      ctx.strokeStyle = "#ea580c";
+      ctx.lineWidth = 1.6;
+      for (let i = 0; i <= pointsToDraw; i++) {
+        const px = padLeft + plotW * ((t[i] - xMin) / (xMax - xMin));
+        const py = padTop + plotH * (1 - (senal_limpia[i] - yMin) / (yMax - yMin));
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+
+    function renderAllCharts() {
+      drawPlot1();
+      drawPlot2();
+      drawPlot3();
+      drawPlot4();
+    }
+
+    // Toggle traces in Graph 1
+    function toggleTrace(key) {
+      traceActive[key] = !traceActive[key];
+      const chip = document.getElementById("leg_" + key);
+      if (traceActive[key]) chip.classList.remove("dimmed");
+      else chip.classList.add("dimmed");
+      drawPlot1();
+    }
+
+    // Switch between 4 graphs and 2 large graphs (Professor view)
+    function setViewMode(num) {
+      const container = document.getElementById("mainGraphsContainer");
+      document.getElementById("tabMode4").classList.toggle("active", num === 4);
+      document.getElementById("tabMode2").classList.toggle("active", num === 2);
+
+      if (num === 2) {
+        container.classList.add("mode-two-graphs");
+      } else {
+        container.classList.remove("mode-two-graphs");
+      }
+      setTimeout(renderAllCharts, 50);
+    }
+
+    function toggleSimulacionTiempoReal() {
+      isLiveSim = !isLiveSim;
+      let btn = document.getElementById("btnPlayLive"), lbl = document.getElementById("playLabel");
+      if (isLiveSim) {
+        btn.classList.add("active-play"); lbl.innerText = "⏸ Pausar";
+        liveTimer = setInterval(() => { timeOffset += 0.05; recalcularTodo(); }, 50);
+      } else {
+        btn.classList.remove("active-play"); lbl.innerText = "▶ En vivo";
+        clearInterval(liveTimer); liveTimer = null;
+      }
+    }
+
+    function togglePanelControles() {
+      document.getElementById("controlsPanel").classList.toggle("show");
+      window.dispatchEvent(new Event('resize'));
+    }
+
+    function actualizarParametro(n, v) {
+      params[n] = parseFloat(v);
+      if (n === 'f1') document.getElementById("lblF1").innerText = params.f1.toFixed(1) + " Hz";
+      if (n === 'f2') document.getElementById("lblF2").innerText = params.f2.toFixed(1) + " Hz";
+      if (n === 'ampTrans') document.getElementById("lblAmpTrans").innerText = params.ampTrans.toFixed(2);
+      if (n === 'ampElec') document.getElementById("lblAmpElec").innerText = params.ampElec.toFixed(2);
+      if (n === 'ampRand') document.getElementById("lblAmpRand").innerText = params.ampRand.toFixed(2);
+      if (n === 'umbral') document.getElementById("lblUmbral").innerText = params.umbral.toFixed(3);
+      recalcularTodo();
+    }
+
+    function resetValoresPorDefecto() {
+      params = { f1: 1.2, f2: 3.5, ampTrans: 1.4, ampElec: 2.2, ampRand: 0.9, umbral: 0.50 };
+      timeOffset = 0.0;
+      if (isLiveSim) toggleSimulacionTiempoReal();
+
+      document.getElementById("rngF1").value = 1.2; document.getElementById("rngF2").value = 3.5;
+      document.getElementById("rngAmpTrans").value = 1.4; document.getElementById("rngAmpElec").value = 2.2;
+      document.getElementById("rngAmpRand").value = 0.9; document.getElementById("rngUmbral").value = 0.50;
+
+      document.getElementById("lblF1").innerText = "1.2 Hz"; document.getElementById("lblF2").innerText = "3.5 Hz";
+      document.getElementById("lblAmpTrans").innerText = "1.40"; document.getElementById("lblAmpElec").innerText = "2.20";
+      document.getElementById("lblAmpRand").innerText = "0.90"; document.getElementById("lblUmbral").innerText = "0.500";
+
+      traceActive = { volc: true, trans: true, elec: true, tot: true };
+      ["volc", "trans", "elec", "tot"].forEach(k => document.getElementById("leg_" + k).classList.remove("dimmed"));
+
+      recalcularTodo();
+    }
+
+    // Tooltip
+    function handleMouseMove(e, plotId) {
+      const container = e.currentTarget, rect = container.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left, tooltip = document.getElementById("chartTooltip");
+      const padLeft = plotId === 2 ? 44 : 36, plotW = rect.width - padLeft - 10;
+      if (mouseX < padLeft || mouseX > padLeft + plotW) { tooltip.style.display = "none"; return; }
+      const ratio = (mouseX - padLeft) / plotW;
+      let text = "";
+
+      if (plotId === 1) {
+        const tV = ratio * 5.0, idx = Math.min(Math.floor(tV * fs), fs * 5);
+        text = `<b>Tiempo:</b> ${tV.toFixed(2)} s\n` +
+          `<span style="color:#2563eb">● Volcánica 1.2–3.5 Hz:</span> ${s_volcanica[idx].toFixed(2)} (Onda suave lenta)\n` +
+          `<span style="color:#f59e0b">● Tránsito 12 Hz:</span> ${s_transito[idx].toFixed(2)} (Amplitud 1.40)\n` +
+          `<span style="color:#9333ea">● Eléctrico 60 Hz:</span> ${s_electrico[idx].toFixed(2)} (Mayor amplitud: 2.20)\n` +
+          `<span style="color:#ffffff; font-weight:700">⬛ Total corrupta:</span> ${senal_corrupta[idx].toFixed(2)}`;
+      } else if (plotId === 2) {
+        let fV = ratio * 80.0, df = fs / 4096, bin = Math.min(Math.floor(fV / df), fftFreqs.length - 1);
+        text = `<b>Frecuencia:</b> ${fV.toFixed(1)} Hz | <b>Magnitud:</b> ${(fftMags[bin] || 0).toFixed(3)}`;
+      } else if (plotId === 3) {
+        const tV = ratio * 5.0, idx = Math.min(Math.floor(tV * fs), fs * 5);
+        text = `<b>Tiempo:</b> ${tV.toFixed(2)} s\n` +
+          `<span style="color:#94a3b8">● Corrupta (antes):</span> ${senal_corrupta[idx].toFixed(2)}\n` +
+          `<span style="color:#ea580c">● Filtrada (después):</span> ${senal_limpia[idx].toFixed(3)} (Ruido eliminado)`;
+      } else if (plotId === 4) {
+        const tV = ratio * 5.0, idx = Math.min(Math.floor(tV * fs), fs * 5);
+        text = `<b>Tiempo:</b> ${tV.toFixed(2)} s\n<span style="color:#0284c7">● Referencia:</span> ${s_volcanica[idx].toFixed(2)}\n<span style="color:#ea580c">● Filtrada:</span> ${senal_limpia[idx].toFixed(2)}`;
+      }
+
+      tooltip.innerHTML = text.replace(/\n/g, '<br>');
+      tooltip.style.display = "block";
+      tooltip.style.left = (e.clientX + 12) + "px";
+      tooltip.style.top = (e.clientY + 12) + "px";
+    }
+    function handleMouseLeave() { document.getElementById("chartTooltip").style.display = "none"; }
+
+    const pasosInfo = [
+      { t: "Paso 1: Cargar / Simular datos temporales", d: "Muestreo a fs = 200 Hz con microtemblores volcánicos (1.2 y 3.5 Hz), ruido de camiones (12 Hz) y red eléctrica (60 Hz)." },
+      { t: "Paso 2: Gráfica 1 — Señales Superpuestas", d: "Se grafican juntas las señales en una sola gráfica con colores distintos y leyenda: Azul para el volcán (onda lenta ~1.25), Ámbar para tránsito (1.40) y Púrpura para eléctrico (2.20 - mayor amplitud)." },
+      { t: "Paso 3: Aplicar Transformada FFT", d: "La FFT revela los picos espectrales individuales permitiendo diseñar la estrategia de filtrado." },
+      { t: "Paso 4: Identificar frecuencias", d: "Se constata que la actividad volcánica está confinada entre 0.5 y 5 Hz, mientras que el ruido está en 12 Hz y 60 Hz." },
+      { t: "Paso 5: Gráfica 2 — Depuración", d: "Se aplica el filtro Butterworth pasa-banda eliminando el ruido de alta frecuencia y restaurando la señal sísmica limpia." },
+      { t: "Paso 6: Evaluar SNR", d: "La relación señal-ruido pasa de -9.95 dB a 8.94 dB (+18.89 dB de mejora)." },
+      { t: "Paso 7: Emitir alerta", d: "El RMS de 0.673 supera el umbral de seguridad de 0.500, activando la ALERTA VOLCÁNICA." }
+    ];
+    function mostrarPaso(n) {
+      let p = pasosInfo[n - 1];
+      document.getElementById("modalTitle").innerText = p.t;
+      document.getElementById("modalBody").innerText = p.d;
+      document.getElementById("modalOverlay").style.display = "flex";
+    }
+    function cerrarModal() { document.getElementById("modalOverlay").style.display = "none"; }
+
+    function cambiarSeccion(el, sec) {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      el.classList.add('active');
+      if (sec === 'temporal') setViewMode(2);
+      else if (sec === 'filtro') setViewMode(2);
+      else if (sec === 'fft') mostrarPaso(3);
+      else if (sec === 'snr') mostrarPaso(6);
+      else if (sec === 'alertas') mostrarPaso(7);
+      else if (sec === 'reportes') alert("Informe técnico sismológico preparado.");
+      else setViewMode(4);
+    }
+
+    window.addEventListener('resize', renderAllCharts);
+    window.addEventListener('DOMContentLoaded', () => {
+      recalcularTodo();
+      setInterval(() => {
+        let d = new Date();
+        document.getElementById("liveTime").innerText = d.toTimeString().split(' ')[0];
+      }, 1000);
+    });
+  </script>
+</body>
+
+</html>
