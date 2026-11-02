@@ -26,12 +26,15 @@ El proyecto implementa el flujo completo de percepción computacional:
    - **Mejora de SNR**: $+18.89\text{ dB}$
    - **RMS en banda volcánica**: $0.673$ (Supera el umbral de $0.500 \rightarrow$ **ALERTA VOLCÁNICA ACTIVADA**)
 
+7. **🔊 Sonificación Sísmica**: Transposición acústica (infrasonido a espectro audible) mediante la Web Audio API y exportación WAV, permitiendo *escuchar* directamente la señal corrupta con el zumbido eléctrico frente a la señal depurada y limpia.
+
 ---
 
 ## 📁 Estructura del Repositorio
 
-- **[`caso_sismografo_s09_(1).py`](caso_sismografo_s09_(1).py)**: Script principal con todo el procesamiento numérico y las gráficas solicitadas por el docente.
-- **[`dashboard_interactivo.html`](dashboard_interactivo.html)**: Panel de control web interactivo con diseño tipo sala de control, simulación en vivo, sliders de parámetros en tiempo real y vista adaptable (*Modo 4 Gráficas* y *Enfoque del Profesor: 2 Gráficas Grandes*).
+- **[`index.html`](index.html)**: Punto de entrada para despliegue en Vercel con el panel completo y sonificación sísmica.
+- **[`dashboard_interactivo.html`](dashboard_interactivo.html)**: Panel de control web interactivo con diseño tipo sala de control, simulación en vivo, barra de audio, sliders en tiempo real y vista adaptable (*Modo 4 Gráficas* y *Enfoque del Profesor: 2 Gráficas Grandes*).
+- **[`caso_sismografo_s09_(1).py`](caso_sismografo_s09_(1).py)**: Script principal con todo el procesamiento numérico, las gráficas solicitadas por el docente y exportación de audios WAV.
 - **[`interfaz_sismografo_gui.py`](interfaz_sismografo_gui.py)**: Aplicación de escritorio nativa Python (Tkinter + Matplotlib) con visualización en vivo.
 - **[`servidor_dashboard.py`](servidor_dashboard.py)**: Servidor HTTP local para servir el dashboard web fácilmente.
 

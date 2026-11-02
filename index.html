@@ -828,6 +828,155 @@
       cursor: pointer;
       float: right;
     }
+
+    /* ================= SONIFICATION AUDIO PANEL ================= */
+    .audio-panel {
+      background: #ffffff;
+      border: 1px solid #bae6fd;
+      border-radius: 8px;
+      padding: 7px 12px;
+      box-shadow: 0 2px 4px rgba(2, 132, 199, 0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .audio-panel.hidden {
+      display: none;
+    }
+    .audio-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .audio-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #0369a1;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .audio-badge {
+      font-size: 9px;
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+    .audio-status-pill {
+      font-size: 10px;
+      font-weight: 700;
+      color: #64748b;
+      background: #f1f5f9;
+      padding: 2px 8px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .audio-status-pill.playing {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
+    }
+    .audio-body {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .audio-modes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: center;
+    }
+    .audio-mode-btn {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      color: #334155;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .audio-mode-btn:hover {
+      background: #e2e8f0;
+    }
+    .audio-mode-btn.active {
+      background: #0284c7;
+      border-color: #0284c7;
+      color: #ffffff;
+      box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3);
+    }
+    .audio-mode-btn.btn-depurada.active {
+      background: #ea580c;
+      border-color: #ea580c;
+      color: #ffffff;
+      box-shadow: 0 1px 3px rgba(234, 88, 12, 0.3);
+    }
+    .audio-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn-play-audio {
+      background: #16a34a;
+      border: 1px solid #15803d;
+      color: #ffffff;
+      padding: 4px 11px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+    .btn-play-audio:hover {
+      background: #15803d;
+    }
+    .btn-play-audio.playing {
+      background: #ef4444;
+      border-color: #dc2626;
+    }
+    .volume-slider-box {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      color: #475569;
+    }
+    .volume-slider-box input[type="range"] {
+      width: 65px;
+      height: 4px;
+      accent-color: #0284c7;
+      cursor: pointer;
+    }
+    .osc-container {
+      background: #0b1727;
+      border-radius: 4px;
+      padding: 1px;
+      display: flex;
+      align-items: center;
+      border: 1px solid #1e293b;
+    }
+    .audio-description {
+      background: #f0f9ff;
+      border-left: 3px solid #0284c7;
+      padding: 3px 8px;
+      border-radius: 0 4px 4px 0;
+      font-size: 10px;
+      color: #0369a1;
+      line-height: 1.35;
+    }
   </style>
 </head>
 
@@ -968,6 +1117,9 @@
         </div>
 
         <div class="header-actions">
+          <button class="btn-action" id="btnAudioToggle" onclick="toggleAudioBar()" style="background:#0284c7; color:#ffffff; border-color:#0284c7;" title="Abrir / ocultar barra de sonificación acústica">
+            <span id="audioIconState">🔊</span> Sonificación
+          </button>
           <button class="btn-action" id="btnPlayLive" onclick="toggleSimulacionTiempoReal()">
             <span id="playLabel">▶ En vivo</span>
           </button>
@@ -980,6 +1132,61 @@
         </div>
       </div>
     </header>
+
+    <!-- SONIFICATION AUDIO PANEL -->
+    <section class="audio-panel" id="audioPanel">
+      <div class="audio-panel-header">
+        <div class="audio-title">
+          <svg style="width:16px; height:16px; fill:#0284c7;" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+          <span>Sonificación Sísmica (Audio de Señales en Tiempo Real)</span>
+          <span class="audio-badge">Infrasonido (1.2–60 Hz) transpuesto al rango audible</span>
+        </div>
+        <div class="audio-status-pill" id="audioStatusText">⏹ Audio apagado</div>
+      </div>
+
+      <div class="audio-body">
+        <div class="audio-modes">
+          <button class="audio-mode-btn active" id="btnAud_corrupta" onclick="setAudioChannel('corrupta')">
+            ⚡ 1. Señal Corrupta (Todo el Ruido)
+          </button>
+          <button class="audio-mode-btn btn-depurada" id="btnAud_filtrada" onclick="setAudioChannel('filtrada')">
+            🧹 2. Señal Filtrada (0.5 – 5 Hz)
+          </button>
+          <button class="audio-mode-btn" id="btnAud_volcanica" onclick="setAudioChannel('volcanica')">
+            🌋 3. Solo Volcán (1.2–3.5 Hz)
+          </button>
+          <button class="audio-mode-btn" id="btnAud_electrico" onclick="setAudioChannel('electrico')">
+            ⚡ 4. Solo Eléctrico (60 Hz)
+          </button>
+          <button class="audio-mode-btn" id="btnAud_transito" onclick="setAudioChannel('transito')">
+            🚛 5. Solo Tránsito (12 Hz)
+          </button>
+          <button class="audio-mode-btn" id="btnAud_blanco" onclick="setAudioChannel('blanco')">
+            📻 6. Solo Ruido Blanco
+          </button>
+        </div>
+
+        <div class="audio-controls">
+          <button class="btn-play-audio" id="btnPlayAudio" onclick="togglePlayAudio()">
+            <span id="audioPlayIcon">▶</span> <span id="audioPlayLabel">Escuchar</span>
+          </button>
+
+          <div class="volume-slider-box">
+            <span id="volIcon">🔉</span>
+            <input type="range" id="rngVolumen" min="0" max="1" step="0.05" value="0.35" oninput="cambiarVolumen(this.value)">
+            <span id="volVal">35%</span>
+          </div>
+
+          <div class="osc-container" title="Osciloscopio de audio en tiempo real">
+            <canvas id="canvasAudioOsc" width="110" height="24"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="audio-description" id="audioDesc">
+        💡 <b>Señal Corrupta:</b> Percibe el zumbido eléctrico penetrante y la oscilación del tránsito que tapan la señal sísmica. Luego pulsa en <b>"2. Señal Filtrada"</b> para escuchar cómo desaparecen gracias al filtro Butterworth.
+      </div>
+    </section>
 
     <!-- INSTRUCTION BANNER (CORRESPONDIENTE A LA INDICACIÓN DEL PROFESOR) -->
     <div class="professor-guide-banner">
@@ -2009,9 +2216,286 @@
       else setViewMode(4);
     }
 
+    // ================= SÍNTESIS DE SONIFICACIÓN SÍSMICA (WEB AUDIO API) =================
+    let audioCtx = null;
+    let isAudioPlaying = false;
+    let audioChannel = 'corrupta';
+    let audioVolume = 0.35;
+    let oscVolc1 = null, oscVolc2 = null, oscTrans = null;
+    let oscElec1 = null, oscElec2 = null, oscElec3 = null;
+    let noiseSource = null;
+    let masterGain = null;
+    let filterNode = null;
+    let analyserNode = null;
+    let animAudioId = null;
+
+    const channelDescriptions = {
+      corrupta: "⚡ <b>Señal Corrupta:</b> Percibe el zumbido eléctrico agudo de 60 Hz y la vibración de 12 Hz del tránsito vehicular que contaminan la señal.",
+      filtrada: "🧹 <b>Señal Filtrada (Filtro 0.5–5 Hz):</b> ¡Observa la diferencia acústica! El zumbido de 60 Hz y el tránsito desaparecen, quedando solo el retumbo volcánico limpio.",
+      volcanica: "🌋 <b>Microtemblores Volcánicos:</b> Frecuencias de 1.2 y 3.5 Hz transpuestas a 96 y 280 Hz. Representa el magma y fluidos en movimiento en el edificio volcánico.",
+      electrico: "⚡ <b>Ruido Eléctrico (60 Hz):</b> Tono e interferencia de red de 60 Hz con armónicos. La componente de mayor amplitud que enmascara los sismos.",
+      transito: "🚛 <b>Ruido de Tránsito (12 Hz):</b> Frecuencia mecánica continua inducida por vehículos pesados en las cercanías del sismógrafo.",
+      blanco: "📻 <b>Ruido Blanco Aleatorio:</b> Ruido térmico de fondo del sensor sísmico (distribución normal gaussiana)."
+    };
+
+    function initAudioContext() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContextClass();
+
+        masterGain = audioCtx.createGain();
+        masterGain.gain.setValueAtTime(audioVolume, audioCtx.currentTime);
+
+        analyserNode = audioCtx.createAnalyser();
+        analyserNode.fftSize = 256;
+
+        filterNode = audioCtx.createBiquadFilter();
+        filterNode.type = "lowpass";
+        filterNode.frequency.setValueAtTime(360, audioCtx.currentTime); // filtra armónicos sobre 360 Hz
+        filterNode.Q.setValueAtTime(1.2, audioCtx.currentTime);
+
+        masterGain.connect(analyserNode);
+        analyserNode.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function createNoiseBuffer() {
+      const bufferSize = audioCtx.sampleRate * 2;
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const output = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        output[i] = (Math.random() * 2 - 1) * 0.15;
+      }
+      return buffer;
+    }
+
+    function startAudioGenerators() {
+      stopAudioGenerators();
+      initAudioContext();
+
+      const tNow = audioCtx.currentTime;
+
+      // 1. Volcánica (1.2 Hz -> 96 Hz, 3.5 Hz -> 280 Hz)
+      oscVolc1 = audioCtx.createOscillator();
+      oscVolc1.type = "sine";
+      oscVolc1.frequency.setValueAtTime(params.f1 * 80, tNow);
+      const gainVolc1 = audioCtx.createGain();
+      gainVolc1.gain.setValueAtTime(0.40 * 0.8, tNow);
+      oscVolc1.connect(gainVolc1);
+
+      oscVolc2 = audioCtx.createOscillator();
+      oscVolc2.type = "sine";
+      oscVolc2.frequency.setValueAtTime(params.f2 * 80, tNow);
+      const gainVolc2 = audioCtx.createGain();
+      gainVolc2.gain.setValueAtTime(0.40 * 0.45, tNow);
+      oscVolc2.connect(gainVolc2);
+
+      const volcBus = audioCtx.createGain();
+      gainVolc1.connect(volcBus);
+      gainVolc2.connect(volcBus);
+
+      // 2. Tránsito (12 Hz -> 720 Hz)
+      oscTrans = audioCtx.createOscillator();
+      oscTrans.type = "sawtooth";
+      oscTrans.frequency.setValueAtTime(12 * 60, tNow);
+      const gainTrans = audioCtx.createGain();
+      gainTrans.gain.setValueAtTime(0.18 * (params.ampTrans / 1.4), tNow);
+      oscTrans.connect(gainTrans);
+
+      // 3. Eléctrico (60 Hz fundamental + 120 Hz + 180 Hz)
+      oscElec1 = audioCtx.createOscillator();
+      oscElec1.type = "sine";
+      oscElec1.frequency.setValueAtTime(60, tNow);
+      const gainElec1 = audioCtx.createGain();
+      gainElec1.gain.setValueAtTime(0.35 * (params.ampElec / 2.2), tNow);
+      oscElec1.connect(gainElec1);
+
+      oscElec2 = audioCtx.createOscillator();
+      oscElec2.type = "triangle";
+      oscElec2.frequency.setValueAtTime(120, tNow);
+      const gainElec2 = audioCtx.createGain();
+      gainElec2.gain.setValueAtTime(0.20 * (params.ampElec / 2.2), tNow);
+      oscElec2.connect(gainElec2);
+
+      oscElec3 = audioCtx.createOscillator();
+      oscElec3.type = "sawtooth";
+      oscElec3.frequency.setValueAtTime(180, tNow);
+      const gainElec3 = audioCtx.createGain();
+      gainElec3.gain.setValueAtTime(0.12 * (params.ampElec / 2.2), tNow);
+      oscElec3.connect(gainElec3);
+
+      const elecBus = audioCtx.createGain();
+      gainElec1.connect(elecBus);
+      gainElec2.connect(elecBus);
+      gainElec3.connect(elecBus);
+
+      // 4. Ruido blanco
+      noiseSource = audioCtx.createBufferSource();
+      noiseSource.buffer = createNoiseBuffer();
+      noiseSource.loop = true;
+      const gainNoise = audioCtx.createGain();
+      gainNoise.gain.setValueAtTime(0.10 * (params.ampRand / 0.9), tNow);
+      noiseSource.connect(gainNoise);
+
+      // ROUTING SEGÚN CANAL
+      if (audioChannel === 'corrupta') {
+        volcBus.connect(masterGain);
+        gainTrans.connect(masterGain);
+        elecBus.connect(masterGain);
+        gainNoise.connect(masterGain);
+      } else if (audioChannel === 'filtrada') {
+        volcBus.connect(filterNode);
+        gainTrans.connect(filterNode);
+        elecBus.connect(filterNode);
+        gainNoise.connect(filterNode);
+        filterNode.connect(masterGain);
+      } else if (audioChannel === 'volcanica') {
+        volcBus.connect(masterGain);
+      } else if (audioChannel === 'electrico') {
+        elecBus.connect(masterGain);
+      } else if (audioChannel === 'transito') {
+        gainTrans.connect(masterGain);
+      } else if (audioChannel === 'blanco') {
+        gainNoise.connect(masterGain);
+      }
+
+      oscVolc1.start();
+      oscVolc2.start();
+      oscTrans.start();
+      oscElec1.start();
+      oscElec2.start();
+      oscElec3.start();
+      noiseSource.start();
+
+      drawAudioOscilloscope();
+    }
+
+    function stopAudioGenerators() {
+      try {
+        if (oscVolc1) { oscVolc1.stop(); oscVolc1.disconnect(); oscVolc1 = null; }
+        if (oscVolc2) { oscVolc2.stop(); oscVolc2.disconnect(); oscVolc2 = null; }
+        if (oscTrans) { oscTrans.stop(); oscTrans.disconnect(); oscTrans = null; }
+        if (oscElec1) { oscElec1.stop(); oscElec1.disconnect(); oscElec1 = null; }
+        if (oscElec2) { oscElec2.stop(); oscElec2.disconnect(); oscElec2 = null; }
+        if (oscElec3) { oscElec3.stop(); oscElec3.disconnect(); oscElec3 = null; }
+        if (noiseSource) { noiseSource.stop(); noiseSource.disconnect(); noiseSource = null; }
+      } catch (e) {}
+      if (animAudioId) { cancelAnimationFrame(animAudioId); animAudioId = null; }
+      clearAudioOscilloscope();
+    }
+
+    function togglePlayAudio() {
+      isAudioPlaying = !isAudioPlaying;
+      const btn = document.getElementById("btnPlayAudio");
+      const icon = document.getElementById("audioPlayIcon");
+      const lbl = document.getElementById("audioPlayLabel");
+      const pill = document.getElementById("audioStatusText");
+
+      if (isAudioPlaying) {
+        btn.classList.add("playing");
+        icon.innerText = "⏹";
+        lbl.innerText = "Detener";
+        pill.classList.add("playing");
+        const activeBtn = document.querySelector('.audio-mode-btn.active');
+        pill.innerHTML = `<span class="dot-green"></span> Sonando: ${activeBtn ? activeBtn.innerText.split(' ')[1] : 'Audio'}`;
+        startAudioGenerators();
+      } else {
+        btn.classList.remove("playing");
+        icon.innerText = "▶";
+        lbl.innerText = "Escuchar";
+        pill.classList.remove("playing");
+        pill.innerText = "⏹ Audio apagado";
+        stopAudioGenerators();
+      }
+    }
+
+    function setAudioChannel(ch) {
+      audioChannel = ch;
+      document.querySelectorAll('.audio-mode-btn').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById('btnAud_' + ch);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      document.getElementById('audioDesc').innerHTML = channelDescriptions[ch] || "";
+
+      if (isAudioPlaying) {
+        startAudioGenerators();
+        document.getElementById("audioStatusText").innerHTML = `<span class="dot-green"></span> Sonando: ${activeBtn ? activeBtn.innerText.split(' ')[1] : 'Audio'}`;
+      }
+    }
+
+    function cambiarVolumen(v) {
+      audioVolume = parseFloat(v);
+      if (masterGain && audioCtx) {
+        masterGain.gain.setValueAtTime(audioVolume, audioCtx.currentTime);
+      }
+      document.getElementById('volVal').innerText = Math.round(audioVolume * 100) + '%';
+      const icon = document.getElementById('volIcon');
+      if (audioVolume === 0) icon.innerText = '🔇';
+      else if (audioVolume < 0.4) icon.innerText = '🔈';
+      else icon.innerText = '🔊';
+    }
+
+    function toggleAudioBar() {
+      const panel = document.getElementById('audioPanel');
+      panel.classList.toggle('hidden');
+    }
+
+    function drawAudioOscilloscope() {
+      if (!isAudioPlaying || !analyserNode) return;
+      const cvs = document.getElementById("canvasAudioOsc");
+      if (!cvs) return;
+      const ctx = cvs.getContext("2d");
+      const width = cvs.width;
+      const height = cvs.height;
+
+      const bufferLength = analyserNode.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      analyserNode.getByteTimeDomainData(dataArray);
+
+      ctx.fillStyle = "#0b1727";
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = (audioChannel === 'filtrada') ? "#ea580c" : "#38bdf8";
+      ctx.beginPath();
+
+      const sliceWidth = width * 1.0 / bufferLength;
+      let x = 0;
+
+      for (let i = 0; i < bufferLength; i++) {
+        const v = dataArray[i] / 128.0;
+        const y = v * (height / 2);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+        x += sliceWidth;
+      }
+      ctx.lineTo(width, height / 2);
+      ctx.stroke();
+
+      animAudioId = requestAnimationFrame(drawAudioOscilloscope);
+    }
+
+    function clearAudioOscilloscope() {
+      const cvs = document.getElementById("canvasAudioOsc");
+      if (!cvs) return;
+      const ctx = cvs.getContext("2d");
+      ctx.fillStyle = "#0b1727";
+      ctx.fillRect(0, 0, cvs.width, cvs.height);
+      ctx.strokeStyle = "#334155";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, cvs.height / 2);
+      ctx.lineTo(cvs.width, cvs.height / 2);
+      ctx.stroke();
+    }
+
     window.addEventListener('resize', renderAllCharts);
     window.addEventListener('DOMContentLoaded', () => {
       recalcularTodo();
+      clearAudioOscilloscope();
       setInterval(() => {
         let d = new Date();
         document.getElementById("liveTime").innerText = d.toTimeString().split(' ')[0];

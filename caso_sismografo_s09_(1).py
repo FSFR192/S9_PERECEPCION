@@ -244,6 +244,41 @@ def abrir_interfaz_grafica(modo='web'):
     html_path = os.path.join(dir_actual, "dashboard_interactivo.html")
     webbrowser.open(f"file:///{html_path.replace(os.sep, '/')}")
 
+"""## 10. Sonificación Sísmica (Exportar Señales a Audio WAV)
+
+Los microtemblores volcánicos ocurren en frecuencias infrasónicas (1.2 – 3.5 Hz),
+las cuales son inaudibles para el oído humano (20 Hz – 20,000 Hz).
+Para percibir auditivamente el impacto del filtrado digital, se aplica una transposición
+acústica estándar (escalado x80) que genera archivos WAV reproducibles:
+- audio_corrupta.wav: mezcla caótica dominada por el zumbido de 60 Hz y el ruido.
+- audio_depurada.wav: señal limpia donde solo resuena el retumbo volcánico.
+"""
+
+def exportar_sonificacion_wav():
+    """Genera archivos de audio WAV para escuchar las señales del sismógrafo."""
+    try:
+        from scipy.io import wavfile
+        fs_audio = int(fs * 80)  # 16,000 Hz
+        
+        def normalizar(s):
+            m = np.max(np.abs(s))
+            if m > 0:
+                return np.int16((s / m) * 32767 * 0.85)
+            return np.zeros(len(s), dtype=np.int16)
+        
+        wavfile.write("audio_corrupta.wav", fs_audio, normalizar(senal_corrupta))
+        wavfile.write("audio_depurada.wav", fs_audio, normalizar(senal_limpia))
+        wavfile.write("audio_volcanica.wav", fs_audio, normalizar(senal_volcanica))
+        wavfile.write("audio_electrico.wav", fs_audio, normalizar(ruido_electrico))
+        print("Archivos de sonificación WAV generados:")
+        print(" -> audio_corrupta.wav (Señal contaminada con ruido)")
+        print(" -> audio_depurada.wav (Señal filtrada y rescatada)")
+    except Exception as e:
+        print(f"Aviso al exportar WAV: {e}")
+
+# Exportar audios automáticamente al procesar el caso
+exportar_sonificacion_wav()
+
 if __name__ == "__main__":
     # Descomente la siguiente línea si desea abrir automáticamente la interfaz al correr este archivo:
     # abrir_interfaz_grafica('web')
